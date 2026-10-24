@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name="products",
+@Table(name = "products",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = "name")
         })
@@ -19,7 +19,6 @@ public class Product {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-
     private Long id;
 
     @Column(nullable = false, precision = 12, scale = 2)
@@ -28,14 +27,11 @@ public class Product {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
-    private String category;
+    @OneToOne(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private ProductCategory productCategory;
 
-    public void update(
-            String name, String category, BigDecimal price) {
+    public void update(String name, BigDecimal price) {
         this.name = name;
-        this.category = category;
         this.price = price;
     }
-
 }

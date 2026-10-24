@@ -1,7 +1,5 @@
 package org.example.service;
 
-
-
 import org.example.entities.Product;
 import org.example.repository.ProductRepository;
 import org.example.response.ProductResponse;
@@ -11,7 +9,6 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,14 +25,7 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(
-            cacheNames = "productSearch",
-            key = "#search + '|' + #category + '|' + " +
-                    "#minPrice + '|' + #maxPrice + '|' + " +
-                    "#pageable.pageNumber + '|' + " +
-                    "#pageable.pageSize + '|' + " +
-                    "#pageable.sort.toString()"
-    )
+    @Cacheable(cacheNames = "productSearch", keyGenerator = "searchKeyGenerator")
     public Page<ProductResponse> search(
             String search,
             String category,
@@ -46,7 +36,12 @@ public class ProductService {
         var specification = ProductSpecification.search(
                 search, category, minPrice, maxPrice);
 
-        return repository.findAll(specification, pageable)
+        // Fallback to a default PageRequest if pageable is null
+        Pageable resolvedPageable = pageable != null
+                ? pageable
+                : PageRequest.of(0, 20);
+
+        return repository.findAll(specification, resolvedPageable)
                 .map(ProductResponse::from);
     }
 
@@ -63,9 +58,9 @@ public class ProductService {
                 .orElseThrow(() ->
                         new IllegalArgumentException("Product not found"));
 
+        // Updated to use your new product structure method signature
         existing.update(
                 input.getName(),
-                input.getCategory(),
                 input.getPrice());
 
         return repository.save(existing);
